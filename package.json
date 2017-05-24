@@ -6,8 +6,10 @@
     "clean": "rimraf ./client/dist",
     "build": "webpack",
     "clean+build": "npm run clean && npm run build",
-    "postinstall": "npm run build",
-    "start": "node server.js"
+    "start:dev-server": "webpack-dev-server",
+    "start:server": "node server.js",
+    "start": "concurrently \"npm run start:dev-server\" \"npm run start:server\"",
+    "start:prod":"npm run build && npm run start:server"
   },
   "author": "",
   "license": "ISC",
@@ -19,8 +21,10 @@
     "vue": "^2.3.3"
   },
   "devDependencies": {
+    "concurrently": "^3.4.0",
     "html-webpack-plugin": "^2.28.0",
     "rimraf": "^2.6.1",
-    "webpack": "^2.5.1"
+    "webpack": "^2.5.1",
+    "webpack-dev-server": "^2.4.5"
   }
 }

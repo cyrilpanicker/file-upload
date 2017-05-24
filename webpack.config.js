@@ -24,5 +24,13 @@ module.exports = {
         new webpack.optimize.CommonsChunkPlugin({
             name:['app','libs']
         })
-    ]
+    ],
+    devServer:{
+        contentBase:  __dirname+'client/dist',
+        proxy: {
+            '*': {
+                target: 'http://localhost:8000/'
+            }
+        }
+    }
 };
