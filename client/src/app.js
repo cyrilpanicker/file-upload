@@ -16,7 +16,7 @@ components['file-upload'] = {
                 }
             };
             for(var i=0;i<files.length;i++){
-                data.append('test',files[i]);
+                data.append('files',files[i]);
             }
             axios.put(this.url,data,config).then(
                 function(response){
@@ -42,7 +42,7 @@ var app = new Vue({
         <file-upload
             label="file"
             :multiple="true"
-            url="file"
+            url="files"
         ></file-upload>
     `,
     data:{}

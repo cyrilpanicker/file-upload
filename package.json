@@ -7,9 +7,9 @@
     "build": "webpack",
     "clean+build": "npm run clean && npm run build",
     "start:dev-server": "webpack-dev-server",
-    "start:server": "node server.js",
+    "start:server": "node server/app.js",
     "start": "concurrently \"npm run start:dev-server\" \"npm run start:server\"",
-    "start:prod":"npm run build && npm run start:server"
+    "start:prod": "npm run build && npm run start:server"
   },
   "author": "",
   "license": "ISC",
@@ -17,7 +17,10 @@
     "axios": "^0.16.1",
     "body-parser": "^1.17.2",
     "express": "^4.15.3",
+    "gridfs-stream": "^1.1.1",
+    "mongodb": "^2.2.27",
     "multer": "^1.3.0",
+    "multer-gridfs-storage": "^1.2.0",
     "vue": "^2.3.3"
   },
   "devDependencies": {
