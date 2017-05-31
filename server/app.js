@@ -5,7 +5,12 @@ var mongo = require('mongodb');
 var grid = require('gridfs-stream');
 var multerGfsStorage = require('multer-gridfs-storage');
 
-var fileLocation = 'http://localhost:8000/file/';
+var fileLocation = '';
+if(process.env.NODE_ENV === 'production'){
+    fileLocation = 'http://techjournal.io:8000/file/';
+}else{
+    fileLocation = 'http://localhost:8000/file/';
+}
 var timeStampedFileName = '';
 
 var db = new mongo.Db('photum', new mongo.Server("127.0.0.1", 27017));
@@ -48,13 +53,31 @@ db.open(function (error,db) {
     app.get('/files',function(request,response){
         db.collection('fs.files').find().toArray(function(error,files){
             if(error){
-                response.sendStatus(500).send({error:'db-error'});
+                response.status(500).send({error:'db-error'});
             }else{
                 response.send(files);
             }
         });
     });
-    var ipaddress = '127.0.0.1';
+    app.delete('/file/:fileName',function(request,response){
+        db.collection('fs.files').remove({filename:request.params.fileName},function(error){
+            if(error){
+                response.status(500).send({error:'db-error'});
+            }else{
+                response.sendStatus(200);
+            }
+        });
+    });
+    app.delete('/files',function(request,response){
+        db.collection('fs.files').remove({},function(error){
+            if(error){
+                response.status(500).send({error:'db-error'});
+            }else{
+                response.sendStatus(200);
+            }
+        });
+    });
+    var ipaddress = '0.0.0.0';
     var port = 8000;
     app.listen(port, ipaddress, function() {
         console.log('listening at : http://'+ipaddress+':'+port);
