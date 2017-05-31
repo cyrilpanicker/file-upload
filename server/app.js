@@ -7,7 +7,7 @@ var multerGfsStorage = require('multer-gridfs-storage');
 
 var fileLocation = '';
 if(process.env.NODE_ENV === 'production'){
-    fileLocation = 'http://techjournal.io:8000/file/';
+    fileLocation = 'http://94.177.203.221:8000/file/';
 }else{
     fileLocation = 'http://localhost:8000/file/';
 }
