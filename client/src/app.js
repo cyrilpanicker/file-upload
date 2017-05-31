@@ -19,8 +19,8 @@ components['file-upload'] = {
             var files = this.inputElement.files;
             var config = {
                 onUploadProgress : function(progressEvent){
-                    var percentCompleted = Math.round(progressEvent.loaded*100/progressEvent.total);
-                    self.$emit('uploadProgress',percentCompleted);
+                    // var percentCompleted = Math.round(progressEvent.loaded*100/progressEvent.total);
+                    // self.$emit('uploadProgress',percentCompleted);
                 }
             };
             for(var i=0;i<files.length;i++){
@@ -59,7 +59,7 @@ components['file-upload'] = {
 };
 
 components['file-list'] = {
-    props:['list','loading','uploading','upload-percent'],
+    props:['list','loading','uploading'],
     template:`
         <div>
             <ul v-show="!loading && !uploading">
@@ -72,8 +72,7 @@ components['file-list'] = {
                 loading...........................................................................
             </div>
             <div class="uploading" v-show="uploading">
-                uploading..................................................
-                <span v-show="uploadPercent">{{uploadPercent}}% completed</span>
+                uploading.........................................................................
             </div>
         </div>
     `
@@ -84,8 +83,7 @@ var app = new Vue({
     data:{
         fileList:[],
         loading:true,
-        uploading:false,
-        uploadPercent:null
+        uploading:false
     },
     methods:{
         getFiles:function(){
@@ -102,15 +100,11 @@ var app = new Vue({
             );
         },
         uploadStart:function(){
-            this.uploadPercent = null;
             this.uploading = true;
         },
         uploadEnd:function(){
             this.uploading = false;
             this.getFiles();
-        },
-        uploadProgress:function(percentCompleted){
-            this.uploadPercent = percentCompleted;
         },
         remove:function(fileName){
             var self = this;
@@ -138,15 +132,13 @@ var app = new Vue({
     template:`
         <div class="app">
 
-            <file-upload @uploadStart="uploadStart" @uploadEnd="uploadEnd"
-                @uploadProgress="uploadProgress" @removeAll="removeAll"
+            <file-upload @uploadStart="uploadStart" @uploadEnd="uploadEnd" @removeAll="removeAll"
                 :show-remove-all="fileList.length" label="" :multiple="true" url="files"
             ></file-upload>
 
-            <file-list @remove="remove" :uploading="uploading" :uploadPercent="uploadPercent"
-                :loading="loading" :list="fileList"
+            <file-list @remove="remove" :uploading="uploading" :loading="loading" :list="fileList"
             ></file-list>
-            
+
         </div>
     `
 });
