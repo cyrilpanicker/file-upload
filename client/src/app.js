@@ -1,5 +1,6 @@
 import Vue from 'vue';
 import axios from 'axios';
+import socketsClient from 'socket.io-client';
 
 var components = {};
 
@@ -17,16 +18,10 @@ components['file-upload'] = {
             self.$emit('uploadStart');
             var data = new FormData();
             var files = this.inputElement.files;
-            var config = {
-                onUploadProgress : function(progressEvent){
-                    // var percentCompleted = Math.round(progressEvent.loaded*100/progressEvent.total);
-                    // self.$emit('uploadProgress',percentCompleted);
-                }
-            };
             for(var i=0;i<files.length;i++){
                 data.append('files',files[i]);
             }
-            axios.put(this.url,data,config).then(
+            axios.put(this.url,data).then(
                 function(response){
                     self.inputElement.value = null;
                     self.uploadDisabled = true;
@@ -59,21 +54,21 @@ components['file-upload'] = {
 };
 
 components['file-list'] = {
-    props:['list','loading','uploading'],
+    props:['list','loading','uploading','eta','percent-completed'],
     template:`
         <div>
-            <ul v-show="!loading && !uploading">
+            <div class="uploading" v-show="uploading">
+                uploading.............................ETA:{{eta}}s, Completed:{{percentCompleted}}%
+            </div>
+            <div class="loading" v-show="loading">
+                refreshing.........................................................................
+            </div>
+            <ul class="file-list">
                 <li v-for="file in list">
                     <a :href="file.metadata.fileLink" target="_blank">{{file.metadata.originalFileName}}</a>
                     <a class="remove" @click.prevent="$emit('remove',file.filename)" href="">\u2718</a>
                 </li>
             </ul>
-            <div class="loading" v-show="loading">
-                loading...........................................................................
-            </div>
-            <div class="uploading" v-show="uploading">
-                uploading.........................................................................
-            </div>
         </div>
     `
 };
@@ -83,7 +78,9 @@ var app = new Vue({
     data:{
         fileList:[],
         loading:true,
-        uploading:false
+        uploading:false,
+        uploadedPercent:0,
+        eta:null
     },
     methods:{
         getFiles:function(){
@@ -136,7 +133,7 @@ var app = new Vue({
                 :show-remove-all="fileList.length" label="" :multiple="true" url="files"
             ></file-upload>
 
-            <file-list @remove="remove" :uploading="uploading" :loading="loading" :list="fileList"
+            <file-list @remove="remove" :eta="eta" :percent-completed="uploadedPercent" :uploading="uploading" :loading="loading" :list="fileList"
             ></file-list>
 
         </div>
@@ -145,3 +142,17 @@ var app = new Vue({
 
 app.$mount('#app');
 app.getFiles();
+var socket = null;
+if(process.env.NODE_ENV === 'production'){
+    socket = socketsClient('http://94.177.203.221:8000');
+}else{
+    socket = socketsClient('http://localhost:8000');
+}
+socket.on('id',function(id){
+    axios.defaults.headers.common['socket-id'] = id;
+});
+socket.on('progress',function(progress){
+    console.log(progress);
+    app.eta = progress.eta;
+    app.uploadedPercent = progress.percent;
+});

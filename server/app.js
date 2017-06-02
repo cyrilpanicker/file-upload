@@ -1,9 +1,12 @@
 var express = require('express');
+var http = require('http');
+var socket_io = require('socket.io');
 var bodyParser = require('body-parser');
 var multer = require('multer');
 var mongo = require('mongodb');
 var grid = require('gridfs-stream');
 var multerGfsStorage = require('multer-gridfs-storage');
+var progress = require('progress-stream');
 
 var fileLocation = '';
 if(process.env.NODE_ENV === 'production'){
@@ -12,6 +15,9 @@ if(process.env.NODE_ENV === 'production'){
     fileLocation = 'http://localhost:8000/file/';
 }
 var timeStampedFileName = '';
+var ipaddress = '0.0.0.0';
+var port = 8000;
+var connectedSockets = {};
 
 var db = new mongo.Db('photum', new mongo.Server("127.0.0.1", 27017));
 db.open(function (error,db) {
@@ -37,14 +43,53 @@ db.open(function (error,db) {
             timeStampedFileName = getTimeStampedFileName(file.originalname);
             callback(null,true);
         }
-    });
+    }).array('files');
     var app = express();
+    var server = http.createServer(app);
+    var sockets = socket_io(server);
+    sockets.on('connection',function(socket){
+        var id = socket.id;
+        socket.emit('id',id);
+        connectedSockets[id] = socket;
+        socket.on('disconnect',function(){
+            delete connectedSockets[id];
+        });
+    });
+    server.listen(port, ipaddress, function() {
+        console.log('listening at : http://'+ipaddress+':'+port);
+    });
     app.use(bodyParser.json());
     app.use(express.static('./client/dist'));
-    app.put('/files',upload.array('files'),function(request,response){
-        response.send(request.files.map(function(file){
-            return file.grid;
-        }));
+    app.put('/files',function(request,response){
+        var socketId = request.headers['socket-id'];
+        var progressStream = progress({
+            length:parseInt(request.headers['content-length']),
+            time:100
+        });
+        request.pipe(progressStream);
+        progressStream.headers = request.headers;
+        if(socketId){
+            var socket = connectedSockets[socketId];
+            if(!socket){
+                console.log('socket misplaced');
+            }else{
+                progressStream.on('progress',function(progress){
+                    socket.emit('progress',{
+                        eta:progress.eta,
+                        percent:parseFloat(progress.percentage.toFixed(2))
+                    });
+                });
+            }
+        }
+        upload(progressStream,response,function(error){
+            if(error){
+                response.status(500).send({error:error});
+            }else{
+                response.send(progressStream.files.map(function(file){
+                    return file.grid;
+                }));
+            }
+        });
     });
     app.get('/file/:fileName',function(request,response){
         var gfsStream = gfs.createReadStream({filename:request.params.fileName});
@@ -76,11 +121,6 @@ db.open(function (error,db) {
                 response.sendStatus(200);
             }
         });
-    });
-    var ipaddress = '0.0.0.0';
-    var port = 8000;
-    app.listen(port, ipaddress, function() {
-        console.log('listening at : http://'+ipaddress+':'+port);
     });
 });
 
